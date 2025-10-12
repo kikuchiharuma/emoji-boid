@@ -5,6 +5,11 @@ import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 import { GPUComputationRenderer } from "three/examples/jsm/Addons.js";
 
+import birdFS from "./birdFS.frag";
+import birdVS from "./birdVS.vert";
+import fragmentShaderPosition from "./FragmentShaderPosition.frag";
+import fragmentShaderVelocity from "./FragmentShaderVelocity.frag";
+
 /* TEXTURE WIDTH FOR SIMULATION */
 const WIDTH = 32;
 
@@ -194,8 +199,8 @@ function initComputeRenderer() {
   fillPositionTexture( dtPosition );
   fillVelocityTexture( dtVelocity );
 
-  velocityVariable = gpuCompute.addVariable( 'textureVelocity', document.getElementById( 'fragmentShaderVelocity' ).textContent, dtVelocity );
-  positionVariable = gpuCompute.addVariable( 'texturePosition', document.getElementById( 'fragmentShaderPosition' ).textContent, dtPosition );
+  velocityVariable = gpuCompute.addVariable( 'textureVelocity', fragmentShaderVelocity, dtVelocity );
+  positionVariable = gpuCompute.addVariable( 'texturePosition', fragmentShaderPosition, dtPosition );
 
   gpuCompute.setVariableDependencies( velocityVariable, [positionVariable, velocityVariable] );
   gpuCompute.setVariableDependencies( positionVariable, [positionVariable, velocityVariable] );
@@ -246,8 +251,8 @@ function initBirds() {
   // THREE.ShaderMaterial
   const material = new THREE.ShaderMaterial( {
     uniforms: birdUniforms,
-    vertexShader: document.getElementById( 'birdVS' ).textContent,
-    fragmentShader: document.getElementById( 'birdFS' ).textContent,
+    vertexShader: birdVS,
+    fragmentShader: birdFS,
     side: THREE.DoubleSide
 
   } );
