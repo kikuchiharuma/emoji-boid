@@ -5,15 +5,13 @@ import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 import { GPUComputationRenderer } from "three/examples/jsm/Addons.js";
 
-import birdFS from "./birdFS.frag";
-import birdVS from "./birdVS.vert";
+import emojiFS from "./emojiFS.frag";
+import emojiVS from "./emojiVS.vert";
 import fragmentShaderPosition from "./FragmentShaderPosition.frag";
 import fragmentShaderVelocity from "./FragmentShaderVelocity.frag";
 
 /* TEXTURE WIDTH FOR SIMULATION */
-const WIDTH = 32;
-
-const BIRDS = WIDTH * WIDTH;
+const WIDTH = 128;
 
 // Custom Geometry - using 3 triangles each. No UVs, no normals currently.
 class BirdGeometry extends THREE.BufferGeometry {
@@ -237,33 +235,59 @@ function initComputeRenderer() {
 
 function initBirds() {
 
-  const geometry = new BirdGeometry();
+  const BIRD_COUNT = WIDTH * WIDTH;
+  const emojis = ['😄', '😃', '😀', '😊', '☺', '😉', '😍', '😘', '😚', '😗', '😙', '😜', '😝', '😛', '😳', '😁', '😔', '😌', '😒', '😞', '😣', '😢', '😂', '😭', '😪', '😥', '😰', '😅', '😓', '😩', '😫', '😨', '😱', '😠', '😡', '😤', '😖', '😆', '😋', '😷', '😎', '😴', '😵', '😲', '😟', '😦', '😧', '😈', '👿', '😮', '😬', '😐', '😕', '😯', '😶', '😇', '😏', '😑', '👲', '👳', '👮', '👷', '💂', '👶', '👦', '👧', '👨', '👩', '👴', '👵', '👱', '👼', '👸', '😺', '😸', '😻', '😽', '😼', '🙀', '😿', '😹', '😾', '👹', '👺', '🙈', '🙉', '🙊', '💀', '👽', '🐶', '🐺', '🐱', '🐭', '🐹', '🐰', '🐸', '🐯', '🐨', '🐻', '🐷', '🐽', '🐮', '🐗', '🐵', '🐒', '🐴', '🐑', '🐘', '🐼', '🐧', '🐦', '🐤', '🐥', '🐣', '🐔', '🐍', '🐢', '🐛', '🐝', '🐜', '🐞', '🐌', '🐙', '🐚', '🐠', '🐟', '🐬', '🐳', '🐋', '🐄', '🐏', '🐀', '🐃', '🐅', '🐇', '🐉', '🐎', '🐐', '🐓', '🐕', '🐖', '🐁', '🐂', '🐲', '🐡', '🐊', '🐫', '🐪', '🐆', '🐈', '🐩'];
+  const ATLAS_GRID_WIDTH = Math.ceil( Math.sqrt( emojis.length ) );
+  const CELL_SIZE = 128;
+  const canvas = document.createElement( 'canvas' );
+  canvas.width = canvas.height = ATLAS_GRID_WIDTH * CELL_SIZE;
+  const ctx = canvas.getContext( '2d' );
+  ctx.font = `${CELL_SIZE * 0.9}px sans-serif`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
 
-  // For Vertex and Fragment
-  birdUniforms = {
-    'color': { value: new THREE.Color( 0xff2200 ) },
-    'texturePosition': { value: null },
-    'textureVelocity': { value: null },
-    'time': { value: 1.0 },
-    'delta': { value: 0.0 }
-  };
+  for ( let i = 0; i < emojis.length; i++ ) {
+    const x = ( i % ATLAS_GRID_WIDTH ) * CELL_SIZE + CELL_SIZE / 2;
+    const y = Math.floor( i / ATLAS_GRID_WIDTH ) * CELL_SIZE + CELL_SIZE / 2;
+    ctx.fillText( emojis[i], x, y );
+  }
 
-  // THREE.ShaderMaterial
+  const atlasTexture = new THREE.CanvasTexture( canvas );
+  atlasTexture.needsUpdate = true;
+
+  atlasTexture.flipY = false;
+
+  const geometry = new THREE.InstancedBufferGeometry();
+
+  const baseVertices = new Float32Array( [0, 0, 0] );
+  geometry.setAttribute( 'position', new THREE.BufferAttribute( baseVertices, 3 ) );
+
+  const birdIndices = new Float32Array( BIRD_COUNT );
+  for ( let i = 0; i < BIRD_COUNT; i++ ) {
+    birdIndices[i] = i % emojis.length;
+  }
+  geometry.setAttribute( 'aBirdIndex', new THREE.InstancedBufferAttribute( birdIndices, 1 ) );
+
+  geometry.instanceCount = BIRD_COUNT;
+
   const material = new THREE.ShaderMaterial( {
-    uniforms: birdUniforms,
-    vertexShader: birdVS,
-    fragmentShader: birdFS,
-    side: THREE.DoubleSide
-
+    uniforms: {
+      'tBirdAtlas': { value: atlasTexture },
+      'texturePosition': { value: null },
+      'textureVelocity': { value: null },
+      'uWidth': { value: WIDTH },
+      'uAtlasWidth': { value: ATLAS_GRID_WIDTH }
+    },
+    vertexShader: emojiVS,
+    fragmentShader: emojiFS,
+    transparent: true
   } );
 
-  const birdMesh = new THREE.Mesh( geometry, material );
-  birdMesh.rotation.y = Math.PI / 2;
-  birdMesh.matrixAutoUpdate = false;
-  birdMesh.updateMatrix();
+  birdUniforms = material.uniforms;
 
-  scene.add( birdMesh );
-
+  const birds = new THREE.Points( geometry, material );
+  birds.frustumCulled = false;
+  scene.add( birds );
 }
 
 function fillPositionTexture( texture ) {
@@ -346,8 +370,6 @@ function render() {
   positionUniforms['delta'].value = delta;
   velocityUniforms['time'].value = now;
   velocityUniforms['delta'].value = delta;
-  birdUniforms['time'].value = now;
-  birdUniforms['delta'].value = delta;
 
   velocityUniforms['predator'].value.set( 0.5 * mouseX / windowHalfX, - 0.5 * mouseY / windowHalfY, 0 );
 
