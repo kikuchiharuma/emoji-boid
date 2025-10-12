@@ -1,0 +1,21 @@
+{
+  "name": "emoji-boid",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npm i && npx rollup --config --watch"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "rollup": "^4.52.4",
+    "rollup-plugin-node-resolve": "^5.2.0"
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  }
+}

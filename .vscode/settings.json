@@ -1,0 +1,47 @@
+{
+  "editor.formatOnSave": false,
+  "[html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "vscode.html-language-features"
+  },
+  "[css]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "vscode.css-language-features"
+  },
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "[json]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "editor.tabSize": 2,
+  "editor.detectIndentation": false,
+  "html.format.enable": true,
+  "html.format.wrapAttributes": "preserve",
+  "css.format.enable": true,
+  "javascript.format.enable": true,
+  "javascript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": true,
+  "javascript.format.semicolons": "insert",
+  "javascript.preferences.quoteStyle": "double",
+  "json.format.enable": true,
+  "json.schemaDownload.enable": true,
+  "html.format.unformatted": "script",
+  "html.format.wrapLineLength": 0,
+  "nuxt.isNuxtApp": false,
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/**/theaters.json"
+      ],
+      "url": "./json-schemas/theaters.schema.json"
+    },
+    {
+      "fileMatch": [
+        "/**/artworks.json"
+      ],
+      "url": "./json-schemas/artworks.schema.json"
+    }
+  ]
+}
