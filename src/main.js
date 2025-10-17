@@ -2,6 +2,9 @@ import * as THREE from 'three';
 
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
+import { GLTFLoader } from "three/examples/jsm/Addons.js";
+
+import { OrbitControls } from "three/examples/jsm/Addons.js";
 
 import { GPUComputationRenderer } from "three/examples/jsm/Addons.js";
 
@@ -109,7 +112,7 @@ class BirdGeometry extends THREE.BufferGeometry {
 //
 
 let container, stats;
-let camera, scene, renderer;
+let camera, scene, renderer, controls;
 let mouseX = 0, mouseY = 0;
 
 let windowHalfX = window.innerWidth / 2;
@@ -118,6 +121,8 @@ let windowHalfY = window.innerHeight / 2;
 const BOUNDS = 800, BOUNDS_HALF = BOUNDS / 2;
 
 let last = performance.now();
+
+let shibuya;
 
 let gpuCompute;
 let velocityVariable;
@@ -133,18 +138,20 @@ function init() {
   container = document.createElement( 'div' );
   document.body.appendChild( container );
 
-  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000 );
+  camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 30000 );
   camera.position.z = 350;
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color( 0xffffff );
-  scene.fog = new THREE.Fog( 0xffffff, 100, 1000 );
+  //scene.background = new THREE.Color( 0xffffff );
+  //scene.fog = new THREE.Fog( 0xffffff, 100, 1000 );
 
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
   renderer.setAnimationLoop( animate );
   container.appendChild( renderer.domElement );
+
+  controls = new OrbitControls( camera, container );
 
   initComputeRenderer();
 
@@ -154,38 +161,74 @@ function init() {
   container.style.touchAction = 'none';
   container.addEventListener( 'pointermove', onPointerMove );
 
-  //
-
   window.addEventListener( 'resize', onWindowResize );
 
   const gui = new GUI();
-
 
   const effectController = {
     separation: 20.0,
     alignment: 20.0,
     cohesion: 20.0,
-    freedom: 0.75
+    freedom: 0.75,
+    scale: 10,
+    x: 656,
+    y: -1000,
+    z: 1000
   };
-
-  const valuesChanger = function () {
-
-    velocityUniforms['separationDistance'].value = effectController.separation;
-    velocityUniforms['alignmentDistance'].value = effectController.alignment;
-    velocityUniforms['cohesionDistance'].value = effectController.cohesion;
-    velocityUniforms['freedomFactor'].value = effectController.freedom;
-
-  };
-
-  valuesChanger();
-
-  gui.add( effectController, 'separation', 0.0, 100.0, 1.0 ).onChange( valuesChanger );
-  gui.add( effectController, 'alignment', 0.0, 100, 0.001 ).onChange( valuesChanger );
-  gui.add( effectController, 'cohesion', 0.0, 100, 0.025 ).onChange( valuesChanger );
-  gui.close();
 
   initBirds();
 
+  const gltfloader = new GLTFLoader();
+
+  gltfloader.load(
+    'assets/shibuya.glb',
+    ( gltf ) => {
+
+      shibuya = gltf.scene;
+
+      shibuya.rotation.y = 45;
+
+      scene.add( shibuya );
+
+      const valuesChanger = function () {
+
+        velocityUniforms['separationDistance'].value = effectController.separation;
+        velocityUniforms['alignmentDistance'].value = effectController.alignment;
+        velocityUniforms['cohesionDistance'].value = effectController.cohesion;
+        velocityUniforms['freedomFactor'].value = effectController.freedom;
+
+        shibuya.scale.set( effectController.scale, effectController.scale, effectController.scale );
+
+        shibuya.position.set(
+          effectController.x,
+          effectController.y,
+          effectController.z );
+
+      };
+
+      valuesChanger();
+
+      gui.add( effectController, 'separation', 0.0, 100.0, 1.0 ).onChange( valuesChanger );
+      gui.add( effectController, 'alignment', 0.0, 100, 0.001 ).onChange( valuesChanger );
+      gui.add( effectController, 'cohesion', 0.0, 100, 0.025 ).onChange( valuesChanger );
+      gui.add( effectController, 'scale', 0.001, 100, 0.001 ).onChange( valuesChanger );
+      gui.add( effectController, 'x', -2000, 2000, 1 ).onChange( valuesChanger );
+      gui.add( effectController, 'y', -2000, 2000, 1 ).onChange( valuesChanger );
+      gui.add( effectController, 'z', -2000, 2000, 1 ).onChange( valuesChanger );
+      gui.close();
+
+
+    } );
+
+
+
+  const directionalLight = new THREE.DirectionalLight( 0xffffff, 5 );
+
+  scene.add( directionalLight );
+
+  const light = new THREE.AmbientLight( 0xffffff );
+
+  scene.add( light );
 }
 
 function initComputeRenderer() {
@@ -355,6 +398,7 @@ function animate() {
 
   render();
   stats.update();
+  controls.update();
 
 }
 
